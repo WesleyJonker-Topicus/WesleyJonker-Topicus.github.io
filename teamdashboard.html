@@ -1,0 +1,666 @@
+<title>Teamdashboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: kop met kerncijfers, inzichten, grafieken per jaar en functie, tijdlijn, daarna de namen per jaar */
+  :root {
+    --bg: #f3f5f7;
+    --surface: #ffffff;
+    --fg: #17212b;
+    --muted: #5d6a77;
+    --line: #dde3e9;
+    --team: #2f4bb3;
+    --team-soft: #e5eafb;
+    --cz: #c27512;
+    --cz-soft: #fbefdc;
+    --focus: #2f4bb3;
+    --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10161d; --surface: #18212b; --fg: #e8edf2; --muted: #9aa8b6; --line: #2a3542;
+      --team: #8ea4ff; --team-soft: #222e55; --cz: #f0a648; --cz-soft: #3d2b12;
+      --focus: #8ea4ff; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10161d; --surface: #18212b; --fg: #e8edf2; --muted: #9aa8b6; --line: #2a3542;
+    --team: #8ea4ff; --team-soft: #222e55; --cz: #f0a648; --cz-soft: #3d2b12;
+    --focus: #8ea4ff; color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+  }
+  .wrap {
+    max-width: 1120px; margin: 0 auto;
+    padding-block: 40px 64px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    display: grid; gap: 40px;
+  }
+  h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; }
+  h2 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.01em; }
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted); margin: 0 0 8px;
+  }
+  .lede { color: var(--muted); max-width: 62ch; margin: 12px 0 0; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; display: inline-block; }
+  .dot.team { background: var(--team); } .dot.cz { background: var(--cz); } .dot.all { background: var(--fg); }
+
+  /* Kerncijfers */
+  .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .stat {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    padding: 16px 18px; display: grid; gap: 2px;
+  }
+  .stat .num { font-family: var(--font-display); font-size: 2.4rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .stat .lbl { color: var(--muted); font-size: 0.875rem; display: flex; align-items: center; gap: 8px; }
+
+  .section-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; margin-bottom: 14px; }
+
+  /* Inzichten en grafieken */
+  .insights { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .insight { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 4px; align-content: start; }
+  .insight .k { font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+  .insight .v { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; line-height: 1.15; }
+  .insight .d { color: var(--muted); font-size: 0.875rem; }
+  .panels { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 12px; margin-bottom: 12px; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; min-width: 0; display: grid; gap: 14px; align-content: start; }
+  .panel h3 { font-size: 1.05rem; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.8125rem; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+  .years { display: grid; gap: 8px; align-items: end; min-height: 190px; }
+  .yc { display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; gap: 4px; min-width: 0; text-align: center; }
+  .yc .n { font-family: var(--font-mono); font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+  .yc .stack { display: flex; flex-direction: column; border-radius: 3px; overflow: hidden; }
+  .yc .stack i { display: block; }
+  .yc .stack .t { background: var(--team); } .yc .stack .c { background: var(--cz); }
+  .yc .y { font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); }
+
+  .bars { display: grid; gap: 8px; }
+  .bar { display: grid; grid-template-columns: 120px 1fr 28px; align-items: center; gap: 10px; font-size: 0.875rem; }
+  .bar .rl { min-width: 0; overflow-wrap: anywhere; }
+  .bar .track { display: flex; height: 14px; border-radius: 3px; overflow: hidden; background: var(--bg); }
+  .bar .track i { display: block; height: 100%; }
+  .bar .track .t { background: var(--team); } .bar .track .c { background: var(--cz); }
+  .bar .cnt { font-family: var(--font-mono); font-size: 0.8125rem; text-align: right; font-variant-numeric: tabular-nums; }
+
+  .matrix-scroll { overflow-x: auto; }
+  .matrix { display: grid; gap: 3px; min-width: 560px; }
+  .mrow { display: grid; align-items: center; gap: 3px; }
+  .mrow .rl { font-size: 0.8125rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mrow.head .rl { color: transparent; }
+  .mc { height: 26px; border-radius: 4px; background: var(--bg); display: grid; place-items: center; font-family: var(--font-mono); font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+  .mrow.head .mc { background: none; height: auto; color: var(--muted); font-size: 0.75rem; }
+
+  /* Tijdlijn */
+  .strip-box { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 10px; }
+  .strip { display: flex; gap: 8px; }
+  .yg { display: grid; gap: 6px; min-width: 0; }
+  .ticks { display: flex; gap: 3px; height: 44px; }
+  .tick {
+    flex: 1 1 0; min-width: 0; border: 0; padding: 0; border-radius: 3px; cursor: pointer;
+    background: var(--team); transition: transform .15s ease, opacity .15s ease;
+  }
+  .tick.cz { background: var(--cz); }
+  .tick.dim { opacity: 0.18; }
+  .tick:hover, .tick:focus-visible { transform: scaleY(1.18); }
+  .tick:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .yl { font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); text-align: center; white-space: nowrap; }
+  .yl .s { display: none; }
+  .strip-readout { font-size: 0.875rem; color: var(--muted); min-height: 1.5em; }
+  .strip-readout strong { color: var(--fg); font-weight: 600; }
+
+  /* Bediening */
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .chip {
+    font: inherit; font-size: 0.875rem; font-weight: 500; color: var(--fg);
+    background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+    padding: 6px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+  }
+  .chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .chip:focus-visible, .search:focus-visible, .select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .search, .select {
+    font: inherit; font-size: 0.875rem; color: var(--fg); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; max-width: 100%;
+  }
+  .search { width: 160px; }
+  .search::placeholder { color: var(--muted); }
+
+  /* Namen per jaar */
+  .yeargroup { display: grid; gap: 10px; margin-bottom: 22px; }
+  .yeargroup h3 { font-size: 1.15rem; display: flex; align-items: baseline; gap: 10px; }
+  .yeargroup h3 span { font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 400; color: var(--muted); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px 14px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px;
+    transition: box-shadow .2s ease, border-color .2s ease;
+  }
+  .card.flash { border-color: var(--focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent); }
+  .avatar {
+    width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center;
+    font-family: var(--font-display); font-weight: 700; font-size: 0.95rem;
+    background: var(--team-soft); color: var(--team);
+  }
+  .card.cz .avatar { background: var(--cz-soft); color: var(--cz); }
+  .name { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+  .meta { font-size: 0.8125rem; color: var(--muted); }
+  .pos { font-family: var(--font-mono); font-size: 0.8125rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .badge {
+    font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 2px 7px; border-radius: 4px; background: var(--cz-soft); color: var(--cz);
+  }
+  .empty { color: var(--muted); padding: 16px 0; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: -16px; }
+  .tab {
+    font: inherit; font-weight: 600; color: var(--muted); background: none; border: 0;
+    border-bottom: 3px solid transparent; padding: 10px 16px; margin-bottom: -1px; cursor: pointer;
+  }
+  .tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--team); }
+  .tab:hover { color: var(--fg); }
+  .tab:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; border-radius: 4px; }
+  .tabpanel { display: grid; gap: 40px; }
+  .tabpanel[hidden] { display: none !important; }
+
+  /* Verjaardagen */
+  .insight.now { background: var(--cz-soft); border-color: var(--cz); }
+  .soon { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+  .soon .card { grid-template-columns: auto 1fr; }
+  .when { font-family: var(--font-mono); font-size: 0.8125rem; color: var(--muted); }
+  .when.today { color: var(--cz); font-weight: 500; }
+  .months { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+  .month { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; }
+  .month.cur { border-color: var(--team); box-shadow: 0 0 0 1px var(--team); }
+  .month h3 { font-size: 1.05rem; display: flex; justify-content: space-between; align-items: baseline; }
+  .month h3 span { font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 400; color: var(--muted); }
+  .month ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .month li { display: grid; grid-template-columns: 2.2em 1fr; gap: 8px; align-items: baseline; }
+  .month li .d { font-family: var(--font-mono); font-size: 0.875rem; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .month li.past { opacity: 0.5; }
+  .month li.today { color: var(--cz); font-weight: 600; }
+  .month li.today .d { color: var(--cz); }
+  .month .none { color: var(--muted); font-size: 0.875rem; }
+
+  @media (max-width: 720px) {
+    .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .panels { grid-template-columns: minmax(0, 1fr); }
+    .bar { grid-template-columns: 100px 1fr 28px; }
+    .strip { gap: 4px; }
+    .ticks { gap: 2px; height: 36px; }
+    .yl .f { display: none; } .yl .s { display: inline; }
+  }
+  @media (prefers-reduced-motion: reduce) { .tick, .card { transition: none; } }
+</style>
+
+<div class="wrap">
+  <div class="tabs" role="tablist" aria-label="Onderdelen">
+    <button class="tab" type="button" role="tab" id="t-verjaardagen" data-tab="verjaardagen" aria-selected="true" aria-controls="tab-verjaardagen">Verjaardagen</button>
+    <button class="tab" type="button" role="tab" id="t-vertrokken" data-tab="vertrokken" aria-selected="false" aria-controls="tab-vertrokken" tabindex="-1">Vertrokken collega's</button>
+  </div>
+
+  <div class="tabpanel" id="tab-verjaardagen" role="tabpanel" aria-labelledby="t-verjaardagen">
+    <header>
+      <p class="eyebrow">Projectteam · kalender</p>
+      <h1>Verjaardagskalender</h1>
+      <p class="lede">Wie er wanneer jarig is, gerekend vanaf vandaag.</p>
+    </header>
+    <div class="insights" id="b-insights"></div>
+    <section aria-labelledby="h-soon">
+      <div class="section-head"><div><p class="eyebrow">Binnenkort</p><h2 id="h-soon">Eerstvolgende verjaardagen</h2></div></div>
+      <div class="soon" id="b-soon"></div>
+    </section>
+    <section aria-labelledby="h-months">
+      <div class="section-head"><div><p class="eyebrow">Het hele jaar</p><h2 id="h-months">Per maand</h2></div></div>
+      <div class="months" id="b-months"></div>
+    </section>
+  </div>
+
+  <div class="tabpanel" id="tab-vertrokken" role="tabpanel" aria-labelledby="t-vertrokken" hidden>
+  <header>
+    <p class="eyebrow">Projectteam · oud-teamleden</p>
+    <h1>Vertrokken collega's</h1>
+    <p class="lede">Iedereen die aan het project heeft gewerkt en is vertrokken, in de volgorde en het jaar waarin ze weggingen. Mensen van CZ zijn apart gemarkeerd.</p>
+  </header>
+
+  <section class="stats" aria-label="Kerncijfers">
+    <div class="stat"><span class="num" id="n-all"></span><span class="lbl"><span class="dot all"></span>Totaal vertrokken</span></div>
+    <div class="stat"><span class="num" id="n-team"></span><span class="lbl"><span class="dot team"></span>Eigen team</span></div>
+    <div class="stat"><span class="num" id="n-cz"></span><span class="lbl"><span class="dot cz"></span>Van CZ</span></div>
+    <div class="stat"><span class="num" id="n-avg"></span><span class="lbl" id="l-avg">Gemiddeld per jaar</span></div>
+  </section>
+
+  <section aria-labelledby="h-stats">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Statistieken</p>
+        <h2 id="h-stats">Wie ging er wanneer weg?</h2>
+      </div>
+      <div class="legend"><span><i class="dot team"></i>Eigen team</span><span><i class="dot cz"></i>CZ</span></div>
+    </div>
+    <div class="insights" id="insights"></div>
+    <div class="panels">
+      <div class="panel">
+        <h3>Vertrekkers per jaar</h3>
+        <div class="years" id="years"></div>
+      </div>
+      <div class="panel">
+        <h3>Vertrekkers per functie</h3>
+        <div class="bars" id="bars"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>Functies per jaar</h3>
+      <div class="matrix-scroll"><div class="matrix" id="matrix"></div></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-strip">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Tijdlijn</p>
+        <h2 id="h-strip">Volgorde van vertrek</h2>
+      </div>
+    </div>
+    <div class="strip-box">
+      <div class="strip" id="strip" role="list"></div>
+      <div class="strip-readout" id="readout">Wijs een streepje aan om te zien wie het is. Klik om naar de kaart te gaan.</div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-list">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Per jaar</p>
+        <h2 id="h-list">Alle vertrekkers</h2>
+      </div>
+      <div class="controls">
+        <button class="chip" type="button" data-filter="all" aria-pressed="true">Iedereen</button>
+        <button class="chip" type="button" data-filter="team" aria-pressed="false"><span class="dot team"></span>Eigen team</button>
+        <button class="chip" type="button" data-filter="cz" aria-pressed="false"><span class="dot cz"></span>CZ</button>
+        <select class="select" id="year" aria-label="Filter op jaar"><option value="">Alle jaren</option></select>
+        <select class="select" id="role" aria-label="Filter op functie"><option value="">Alle functies</option></select>
+        <button class="chip" type="button" id="sort" aria-pressed="false">Nieuwste eerst</button>
+        <input class="search" id="q" type="search" placeholder="Zoek op naam" aria-label="Zoek op naam">
+      </div>
+    </div>
+    <div id="groups"></div>
+    <p class="empty" id="empty" hidden>Geen namen gevonden voor deze selectie.</p>
+  </section>
+  </div>
+</div>
+
+<script>
+  // Eén jaartal, daarna de vertrekkers van dat jaar als "nr Naam (CZ) [Functie]".
+  const DATA = `
+2017
+1 Yoshi [Tester]
+
+2018
+2 Maarten [Product Owner]
+3 Eric [BE ontwikkelaar]
+
+2019
+4 Hans [Manager]
+5 Joris [Techlead]
+
+2020
+6 Arno R. [BE ontwikkelaar]
+7 Tim [Databasespecialist]
+8 Matthijs [Tester]
+9 Bas (CZ) [DevOps]
+
+2021
+10 Nicole (CZ) [FE ontwikkelaar]
+11 Nick [Tester]
+12 Pepijn (CZ) [FE ontwikkelaar]
+13 Sander (CZ) [BE ontwikkelaar]
+14 Anne [Architect]
+
+2022
+15 Erwin [FE ontwikkelaar]
+16 Jordy (CZ) [BE ontwikkelaar]
+17 Dave [BE ontwikkelaar]
+18 Martijn (CZ) [???]
+19 Peter [Analist]
+20 Pieter [Manager]
+
+2023
+21 Olivier [Analist]
+22 Chris [BE ontwikkelaar]
+23 Henk Jan [Manager]
+24 Nikki [Tester]
+25 Yorick [Analist]
+26 Willem H. [DevOps]
+27 Marc H. (CZ) [BE ontwikkelaar]
+
+2024
+28 Erik-Jan [BE ontwikkelaar]
+29 Thijs (CZ) [Scrummaster]
+30 Wouter K. [Teamlead]
+31 Jelmer [Analist]
+32 Ronald (CZ) [Scrummaster]
+33 Jasper [Product Owner]
+
+2025
+34 Bibi [BE ontwikkelaar]
+35 Leon [Manager]
+36 Ralph [DevOps]
+37 Evenynke [Analist]
+
+2026
+38 David [Delivery manager]
+39 Esra [Techlead]
+40 Marloes [Teamlead]
+41 Peter-Paul [Delivery manager]
+42 Youri [BE ontwikkelaar]
+`;
+  const MANAGEMENT = ["Manager", "Teamlead", "Delivery manager"];
+  const $ = id => document.getElementById(id);
+
+  const people = [];
+  let currentYear = null;
+  DATA.split("\n").forEach(line => {
+    line = line.trim();
+    if (/^\d{4}$/.test(line)) { currentYear = +line; return; }
+    const m = line.match(/^(\d+)\s+(.*?)\s*(\(CZ\))?\s*\[([^\]]*)\]?\s*$/);
+    if (!m) return;
+    const role = m[4].trim();
+    people.push({ pos: +m[1], name: m[2].trim(), cz: !!m[3], role: !role || /^\?+$/.test(role) ? "Onbekend" : role, year: currentYear });
+  });
+  const years = [...new Set(people.map(p => p.year))];
+  const initials = n => n.split(/[\s-]+/).filter(p => /^[A-Z]/.test(p)).slice(0, 2).map(p => p[0]).join("") || n[0];
+  const count = (list, fn) => list.filter(fn).length;
+  const byYear = y => people.filter(p => p.year === y);
+
+  // Kerncijfers
+  $("n-all").textContent = people.length;
+  $("n-team").textContent = count(people, p => !p.cz);
+  $("n-cz").textContent = count(people, p => p.cz);
+  $("n-avg").textContent = (people.length / years.length).toLocaleString("nl-NL", { maximumFractionDigits: 1 });
+  $("l-avg").textContent = `Gemiddeld per jaar (${years[0]}–${years[years.length - 1]})`;
+
+  // Functies, meest voorkomend eerst
+  const roleCounts = {};
+  people.forEach(p => { (roleCounts[p.role] ||= { t: 0, c: 0 })[p.cz ? "c" : "t"]++; });
+  const size = r => roleCounts[r].t + roleCounts[r].c;
+  const roles = Object.keys(roleCounts).sort((a, b) => size(b) - size(a) || a.localeCompare(b));
+
+  // Inzichten
+  const peak = years.reduce((a, y) => byYear(y).length > byYear(a).length ? y : a, years[0]);
+  const topRole = roles[0], topN = size(topRole);
+  const mgmt = people.filter(p => MANAGEMENT.includes(p.role));
+  const halfYears = Math.floor(years.length / 2);
+  const early = years.slice(0, halfYears), late = years.slice(halfYears);
+  const mgmtEarly = count(mgmt, p => early.includes(p.year)), mgmtLate = mgmt.length - mgmtEarly;
+  const czList = people.filter(p => p.cz);
+  const czYears = czList.map(p => p.year);
+  const czDev = count(czList, p => /ontwikkelaar/.test(p.role));
+  const lastYear = years[years.length - 1];
+  const insight = (k, v, d) => `<div class="insight"><span class="k">${k}</span><span class="v">${v}</span><span class="d">${d}</span></div>`;
+  $("insights").innerHTML = [
+    insight("Drukste jaar", peak, `${byYear(peak).length} vertrekkers, het hoogste aantal in één jaar.`),
+    insight("Meest vertrokken functie", topRole, `${topN} van de ${people.length} vertrekkers (${Math.round(topN / people.length * 100)}%).`),
+    insight("Management", `${mgmtEarly} → ${mgmtLate}`, `Managers, teamleads en delivery managers: ${mgmtEarly} in ${early[0]}–${early[early.length - 1]}, ${mgmtLate} in ${late[0]}–${lastYear}.`),
+    insight("Vanuit CZ", `${Math.min(...czYears)}–${Math.max(...czYears)}`, `${czList.length} CZ-collega's vertrokken, ${czDev} van hen als ontwikkelaar. ${Math.max(...czYears) < lastYear ? `Sinds ${Math.max(...czYears) + 1} is er niemand meer van CZ vertrokken.` : ""}`)
+  ].join("");
+
+  // Vertrekkers per jaar
+  const maxYear = Math.max(...years.map(y => byYear(y).length));
+  $("years").style.gridTemplateColumns = `repeat(${years.length}, minmax(0, 1fr))`;
+  $("years").innerHTML = years.map(y => {
+    const l = byYear(y), t = count(l, p => !p.cz), c = l.length - t;
+    return `<div class="yc"><span class="n">${l.length}</span><div class="stack" role="img" aria-label="${y}: ${t} eigen team, ${c} CZ" style="height:${(l.length / maxYear * 140).toFixed(0)}px"><i class="c" style="flex:${c}"></i><i class="t" style="flex:${t}"></i></div><span class="y">${y}</span></div>`;
+  }).join("");
+
+  // Per functie
+  $("bars").innerHTML = roles.map(r => {
+    const c = roleCounts[r], w = v => (v / topN * 100).toFixed(1) + "%";
+    return `<div class="bar"><span class="rl">${r}</span><span class="track" role="img" aria-label="${r}: ${c.t} eigen team, ${c.c} CZ"><i class="t" style="width:${w(c.t)}"></i><i class="c" style="width:${w(c.c)}"></i></span><span class="cnt">${size(r)}</span></div>`;
+  }).join("");
+
+  // Functies per jaar (aantallen)
+  const cols = `120px repeat(${years.length}, minmax(0, 1fr))`;
+  const maxCell = Math.max(...roles.flatMap(r => years.map(y => count(byYear(y), p => p.role === r))));
+  $("matrix").innerHTML =
+    `<div class="mrow head" style="grid-template-columns:${cols}"><span class="rl">.</span>${years.map(y => `<span class="mc">${y}</span>`).join("")}</div>` +
+    roles.map(r => `<div class="mrow" style="grid-template-columns:${cols}"><span class="rl">${r}</span>${years.map(y => {
+      const n = count(byYear(y), p => p.role === r);
+      const style = n ? ` style="background:color-mix(in srgb, var(--team) ${Math.round(18 + 32 * n / maxCell)}%, var(--surface))"` : "";
+      return `<span class="mc"${style} title="${r}, ${y}: ${n}">${n || ""}</span>`;
+    }).join("")}</div>`).join("");
+
+  // Filters
+  const state = { filter: "all", newest: false, q: "", role: "", year: "" };
+  const matches = p =>
+    (state.filter === "all" || (state.filter === "cz") === p.cz) &&
+    (!state.role || p.role === state.role) &&
+    (!state.year || p.year === +state.year) &&
+    p.name.toLowerCase().includes(state.q);
+  years.forEach(y => $("year").add(new Option(y, y)));
+  [...roles].sort((a, b) => a.localeCompare(b)).forEach(r => $("role").add(new Option(r, r)));
+
+  // Tijdlijnstrook, gegroepeerd per jaar
+  const strip = $("strip"), readout = $("readout");
+  const defaultReadout = readout.innerHTML;
+  years.forEach(y => {
+    const g = document.createElement("div");
+    g.className = "yg";
+    g.style.flex = `${byYear(y).length} 1 0`;
+    const ticks = document.createElement("div");
+    ticks.className = "ticks";
+    byYear(y).forEach(p => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "tick" + (p.cz ? " cz" : "");
+      b.setAttribute("role", "listitem");
+      b.setAttribute("aria-label", `#${p.pos} ${p.name}, ${p.role}, ${p.year}${p.cz ? " (CZ)" : ""}`);
+      b.dataset.pos = p.pos;
+      const show = () => { readout.innerHTML = `<strong>#${p.pos} · ${p.name}</strong> · ${p.role} · ${p.year} · ${p.cz ? "CZ" : "eigen team"}`; };
+      b.addEventListener("mouseenter", show);
+      b.addEventListener("focus", show);
+      b.addEventListener("mouseleave", () => { readout.innerHTML = defaultReadout; });
+      b.addEventListener("click", () => jumpTo(p.pos));
+      ticks.appendChild(b);
+    });
+    const l = document.createElement("div");
+    l.className = "yl";
+    l.innerHTML = `<span class="f">${y}</span><span class="s">’${String(y).slice(2)}</span>`;
+    g.append(ticks, l);
+    strip.appendChild(g);
+  });
+
+  function card(p) {
+    const el = document.createElement("article");
+    el.className = "card" + (p.cz ? " cz" : "");
+    el.id = "p-" + p.pos;
+    el.innerHTML = `
+      <div class="avatar" aria-hidden="true">${initials(p.name)}</div>
+      <div style="min-width:0"><div class="name">${p.name}</div><div class="meta">${p.role}</div></div>
+      <div style="display:grid;justify-items:end;gap:4px"><span class="pos">#${String(p.pos).padStart(2, "0")}</span>${p.cz ? '<span class="badge">CZ</span>' : ""}</div>`;
+    return el;
+  }
+
+  function render() {
+    const box = $("groups");
+    box.replaceChildren();
+    const ys = state.newest ? [...years].reverse() : years;
+    let total = 0;
+    ys.forEach(y => {
+      const list = byYear(y).filter(matches);
+      if (!list.length) return;
+      if (state.newest) list.reverse();
+      total += list.length;
+      const sec = document.createElement("div");
+      sec.className = "yeargroup";
+      sec.innerHTML = `<h3>${y}<span>${list.length} ${list.length === 1 ? "vertrekker" : "vertrekkers"}</span></h3>`;
+      const grid = document.createElement("div");
+      grid.className = "grid";
+      list.forEach(p => grid.appendChild(card(p)));
+      sec.appendChild(grid);
+      box.appendChild(sec);
+    });
+    $("empty").hidden = total > 0;
+    strip.querySelectorAll(".tick").forEach(t => t.classList.toggle("dim", !matches(people[t.dataset.pos - 1])));
+  }
+
+  function jumpTo(pos) {
+    if (!matches(people[pos - 1])) {
+      Object.assign(state, { filter: "all", q: "", role: "", year: "" });
+      $("q").value = ""; $("role").value = ""; $("year").value = "";
+      document.querySelectorAll("[data-filter]").forEach(c => c.setAttribute("aria-pressed", c.dataset.filter === "all"));
+      render();
+    }
+    const el = document.getElementById("p-" + pos);
+    if (!el) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+    el.classList.add("flash");
+    setTimeout(() => el.classList.remove("flash"), 1600);
+  }
+
+  document.querySelectorAll("[data-filter]").forEach(c => c.addEventListener("click", () => {
+    state.filter = c.dataset.filter;
+    document.querySelectorAll("[data-filter]").forEach(o => o.setAttribute("aria-pressed", o === c));
+    render();
+  }));
+  $("sort").addEventListener("click", e => {
+    state.newest = !state.newest;
+    e.currentTarget.setAttribute("aria-pressed", state.newest);
+    render();
+  });
+  $("year").addEventListener("change", e => { state.year = e.target.value; render(); });
+  $("role").addEventListener("change", e => { state.role = e.target.value; render(); });
+  $("q").addEventListener("input", e => { state.q = e.target.value.trim().toLowerCase(); render(); });
+  render();
+</script>
+
+<script>
+  // Tabs: de kalender is de eerste tab; #vertrokken opent de tweede direct.
+  (function () {
+    const tabs = [...document.querySelectorAll("[role=tab]")];
+    const show = id => {
+      tabs.forEach(t => {
+        const on = t.dataset.tab === id;
+        t.setAttribute("aria-selected", on);
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById("tab-" + t.dataset.tab).hidden = !on;
+      });
+    };
+    tabs.forEach(t => {
+      t.addEventListener("click", () => {
+        show(t.dataset.tab);
+        try { history.replaceState(null, "", "#" + t.dataset.tab); } catch (e) {}
+      });
+      t.addEventListener("keydown", e => {
+        if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+        const next = tabs[(tabs.indexOf(t) + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
+        next.click(); next.focus();
+      });
+    });
+    show(location.hash === "#vertrokken" ? "vertrokken" : "verjaardagen");
+  })();
+</script>
+
+<script>
+  // Verjaardagskalender, uitgerekend vanaf de datum van vandaag.
+  (function () {
+    const DATA = `
+04/01 Jaap
+08/01 Deepika
+20/01 Rianne
+20/01 Danielle
+02/03 Hannah
+25/03 Arno
+26/03 Jorn
+10/04 Idris
+11/04 Luuk
+30/04 Joris
+11/05 Marc
+15/05 David
+16/05 Wouter
+24/05 Björn
+25/05 Frank
+08/06 Ramon
+30/06 Danique
+06/07 Wesley
+17/07 Remco
+26/07 Bert-Jan
+01/08 Joost
+22/08 Sander
+26/08 Gert-Jan
+15/09 Koen
+06/10 Adam
+16/10 Nick
+27/10 Arjen
+17/11 Marten
+17/12 Albert
+`;
+    const $ = id => document.getElementById(id);
+    const MONTHS = ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"];
+    const people = DATA.trim().split("\n").map(l => {
+      const m = l.trim().match(/^(\d\d)\/(\d\d)\s+(.+)$/);
+      return m && { d: +m[1], m: +m[2], name: m[3] };
+    }).filter(Boolean);
+
+    const now = new Date();
+    const curM = now.getMonth() + 1, curD = now.getDate();
+    const t0 = Date.UTC(now.getFullYear(), now.getMonth(), curD);
+    people.forEach(p => {
+      let t = Date.UTC(now.getFullYear(), p.m - 1, p.d);
+      if (t < t0) t = Date.UTC(now.getFullYear() + 1, p.m - 1, p.d);
+      p.days = Math.round((t - t0) / 864e5);
+    });
+    const upcoming = [...people].sort((a, b) => a.days - b.days);
+    const fmt = p => `${p.d} ${MONTHS[p.m - 1]}`;
+    const initials = n => n.split(/[\s-]+/).filter(s => /^[A-ZÀ-Ý]/.test(s)).slice(0, 2).map(s => s[0]).join("") || n[0];
+    const when = days => days === 0 ? "vandaag" : days === 1 ? "morgen" : `over ${days} dagen`;
+    const join = names => names.length > 1 ? names.slice(0, -1).join(", ") + " en " + names[names.length - 1] : names[0];
+
+    // Inzichten
+    const first = upcoming.filter(p => p.days === upcoming[0].days);
+    const thisMonth = people.filter(p => p.m === curM);
+    const perMonth = MONTHS.map((_, i) => people.filter(p => p.m === i + 1));
+    const busiest = Math.max(...perMonth.map(l => l.length));
+    const busyNames = MONTHS.filter((_, i) => perMonth[i].length === busiest);
+    const empty = MONTHS.filter((_, i) => !perMonth[i].length);
+    const insight = (k, v, d, cls = "") => `<div class="insight ${cls}"><span class="k">${k}</span><span class="v">${v}</span><span class="d">${d}</span></div>`;
+    $("b-insights").innerHTML = [
+      first[0].days === 0
+        ? insight("Vandaag jarig", join(first.map(p => p.name)), "Feliciteer ze even.", "now")
+        : insight("Eerstvolgende", join(first.map(p => p.name)), `${fmt(first[0])}, ${when(first[0].days)}.`),
+      insight(`Deze maand`, `${thisMonth.length}`, thisMonth.length ? `Verjaardagen in ${MONTHS[curM - 1]}: ${join(thisMonth.map(p => p.name))}.` : `Geen verjaardagen in ${MONTHS[curM - 1]}.`),
+      insight("Drukste maand", busyNames.join(" en "), `${busiest} verjaardagen${busyNames.length > 1 ? " per maand" : ""}.`),
+      insight("Totaal", `${people.length}`, empty.length ? `In ${join(empty)} is niemand jarig.` : "Elke maand heeft een verjaardag.")
+    ].join("");
+
+    // Eerstvolgende zes
+    $("b-soon").innerHTML = upcoming.slice(0, 6).map(p => `
+      <article class="card ${p.days === 0 ? "cz" : ""}" style="grid-template-columns:auto 1fr">
+        <div class="avatar" aria-hidden="true">${initials(p.name)}</div>
+        <div style="min-width:0"><div class="name">${p.name}</div><div class="when ${p.days === 0 ? "today" : ""}">${fmt(p)} · ${when(p.days)}</div></div>
+      </article>`).join("");
+
+    // Per maand
+    $("b-months").innerHTML = perMonth.map((list, i) => {
+      const m = i + 1;
+      const rows = list.map(p => {
+        const cls = m === curM && p.d === curD ? "today" : (m < curM || (m === curM && p.d < curD)) ? "past" : "";
+        return `<li class="${cls}"><span class="d">${p.d}</span><span>${p.name}</span></li>`;
+      }).join("");
+      return `<section class="month ${m === curM ? "cur" : ""}"><h3>${MONTHS[i][0].toUpperCase() + MONTHS[i].slice(1)}<span>${list.length || ""}</span></h3>${rows ? `<ul>${rows}</ul>` : `<p class="none">Niemand jarig.</p>`}</section>`;
+    }).join("");
+  })();
+</script>
